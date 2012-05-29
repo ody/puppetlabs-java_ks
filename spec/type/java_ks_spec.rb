@@ -64,12 +64,19 @@ describe Puppet::Type.type(:java_ks) do
       Puppet::Type.type(:java_ks).new(jks)[:target].should == jks_resource[:target]
     end
 
+    it 'resource should be valid if namevars are given as parameters and title is arbitrary' do
+      jks = jks_resource.dup
+      jks[:title] = 'a_not_mappable_title'
+      Puppet::Type.type(:java_ks).new(jks)[:name].should == jks_resource[:name]
+      Puppet::Type.type(:java_ks).new(jks)[:target].should == jks_resource[:target]
+    end
+
     it 'should downcase :name values' do
       jks = jks_resource.dup
       jks[:name] = 'APP.EXAMPLE.COM'
       Puppet::Type.type(:java_ks).new(jks)[:name].should == jks_resource[:name]
     end
- 
+
     it 'should have :false value to :trustcacerts when parameter not provided' do
       Puppet::Type.type(:java_ks).new(jks_resource)[:trustcacerts].should == :false
     end
