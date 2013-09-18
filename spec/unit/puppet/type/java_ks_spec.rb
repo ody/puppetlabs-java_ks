@@ -25,9 +25,9 @@ describe Puppet::Type.type(:java_ks) do
     Puppet::Type.type(:java_ks).new(@app_example_com)[:ensure].should == :present
   end
 
-  describe 'when validating arttibutes' do
+  describe 'when validating attributes' do
 
-    [:name, :target, :private_key, :certificate, :password, :trustcacerts].each do |param|
+    [:name, :target, :private_key, :certificate, :password, :password_file, :trustcacerts].each do |param|
       it "should have a #{param} parameter" do
         Puppet::Type.type(:java_ks).attrtype(param).should == :param
       end
@@ -48,12 +48,23 @@ describe Puppet::Type.type(:java_ks) do
       end
     end
 
-    [:name, :target].each do |nvar|
-      it "#{nvar} title component should map to #{nvar} parameter" do
-        jks = jks_resource.dup
-        jks.delete(nvar)
-        Puppet::Type.type(:java_ks).new(jks)[nvar].should == jks_resource[nvar]
-      end
+    it "first half of title should map to name parameter" do
+      jks = jks_resource.dup
+      jks.delete(:name)
+      Puppet::Type.type(:java_ks).new(jks)[:name].should == jks_resource[:name]
+    end
+
+    it "second half of title should map to target parameter when no target is supplied" do
+      jks = jks_resource.dup
+      jks.delete(:target)
+      Puppet::Type.type(:java_ks).new(jks)[:target].should == jks_resource[:target]
+    end
+
+    it "second half of title should not map to target parameter when target is supplied" do
+      jks = jks_resource.dup
+      jks[:target] = '/tmp/some_other_app.jks'
+      Puppet::Type.type(:java_ks).new(jks)[:target].should_not == jks_resource[:target]
+      Puppet::Type.type(:java_ks).new(jks)[:target].should == '/tmp/some_other_app.jks'
     end
 
     it 'title components should map to namevar parameters' do
@@ -72,6 +83,22 @@ describe Puppet::Type.type(:java_ks) do
  
     it 'should have :false value to :trustcacerts when parameter not provided' do
       Puppet::Type.type(:java_ks).new(jks_resource)[:trustcacerts].should == :false
+    end
+
+    it 'should fail if both :password and :password_file are provided' do
+      jks = jks_resource.dup
+      jks[:password_file] = '/path/to/password_file'
+      expect {
+        Puppet::Type.type(:java_ks).new(jks)
+      }.to raise_error(Puppet::Error, /You must pass either/)
+    end
+
+    it 'should fail if neither :password or :password_file is provided' do
+      jks = jks_resource.dup
+      jks.delete(:password)
+      expect {
+        Puppet::Type.type(:java_ks).new(jks)
+      }.to raise_error(Puppet::Error, /You must pass one of/)
     end
   end
 
